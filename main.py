@@ -179,7 +179,7 @@ def start_screen():
                 down_m = False
                 right_m = False
                 left_m = False
-                enemy = Enemy('box.png', 0,0
+                enemy = Enemy('box.png', 0,0)
 
 
 

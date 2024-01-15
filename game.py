@@ -1,3 +1,5 @@
+import random
+
 import pygame
 import sys, os
 import math
@@ -17,6 +19,7 @@ player = None
 XM, YM = 0, 0
 tile_width = tile_height = 50
 
+
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     # если файл не существует, то выходим
@@ -32,86 +35,12 @@ def load_image(name, colorkey=None):
     else:
         image = image.convert_alpha()
     return image
-class Plant(pygame.sprite.Sprite):
-    def __init__(self, sheet, columns, rows, x, y):
-        super().__init__(all_sprites, plant_group)
-        self.frames = []
-        self.cut_sheet(sheet, columns, rows)
-        self.cur_frame = 1
-        self.clock = pygame.time.Clock()
-        self.time = 0
-        self.delay = 10000
-        self.time += self.clock.tick()
-        self.image = self.frames[self.cur_frame]
-        self.image = pygame.transform.scale(self.image, (tile_width, tile_height))
-        self.rect = self.rect.move(x * tile_width, y * tile_height)
-
-    def cut_sheet(self, sheet, columns, rows):
-        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
-                                sheet.get_height() // rows)
-        for j in range(rows):
-            for i in range(columns):
-                frame_location = (self.rect.w * i, self.rect.h * j)
-                self.frames.append(sheet.subsurface(pygame.Rect(
-                    frame_location, self.rect.size)))
-
-    def update(self, frame_n=-1):
-        if frame_n == -1:
-            frame_n = self.cur_frame
-        self.cur_frame = (frame_n + 1) % len(self.frames)
-        self.image = self.frames[frame_n]
-        self.image = pygame.transform.scale(self.image, (tile_width, tile_height))
-
-
-# class Camera:
-#     def __init__(self):
-#         self.dx = 0
-#         self.dy = 0
-#
-#     def apply(self, obj):
-#         obj.rect.x += self.dx
-#         obj.rect.y += self.dy
-#
-#     def null(self):
-#         dx = 0
-#         dy = 0
-#
-#
-# camera = Camera()
-
-# class Man(pygame.sprite.Sprite):
-#     def __init__(self, image, x, y):
-#         super().__init__(all_sprites, player_group)
-#         self.clock = pygame.time.Clock()
-#         self.time = 0
-#         self.delay = 10000
-#         self.time += self.clock.tick()
-#         self.image = load_image(image,-1)
-#         self.image = pygame.transform.scale(self.image, (tile_width * 2, tile_height * 2))
-#         self.rect = self.image.get_rect().move(
-#             tile_width * x, tile_height * y)
-#         self.rotate(-90)
-#
-#     def update(self, x, y):
-#         self.rect.x += x
-#         self.rect.y += y
-#
-#     def rotate(self, angle):
-#         # mouse_x, mouse_y = pygame.mouse.get_pos()
-#         # rel_x, rel_y = mouse_x - self.rect.x, mouse_y - self.rect.y
-#         # angle = (180 / math.pi) * -math.atan2(rel_y, rel_x)
-#         self.image = pygame.transform.rotate(self.image, int(angle))
-#         self.rect = self.image.get_rect()
-#
-#
-# man = Man('man.jpg', 2, 5)
-
-
 
 
 def terminate():
     pygame.quit()
     sys.exit()
+
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, image, x, y):
@@ -140,6 +69,8 @@ class Enemy(pygame.sprite.Sprite):
         self.cur_frame = (frame_n + 1) % len(self.frames)
         self.image = self.frames[frame_n]
         self.image = pygame.transform.scale(self.image, (tile_width, tile_height))
+
+
 def start_screen():
     # xm, ym = 0, 0
     intro_text = ["ЗАСТАВКА", "",
@@ -164,28 +95,23 @@ def start_screen():
             if event.type == pygame.QUIT:
                 terminate()
             elif (event.type == pygame.KEYDOWN or \
-                    event.type == pygame.MOUSEBUTTONDOWN) and not do_draw:
+                  event.type == pygame.MOUSEBUTTONDOWN) and not do_draw:
                 do_draw = True
                 player, level_x, level_y = generate_level(load_level('map1.txt'))
-
                 level = load_level('map1.txt')
                 xm = player.rect.x // tile_width
                 ym = player.rect.y // tile_height
-                if player.rect.x >= WIDTH:
-                    v = player.rect.x - WIDTH  // 2 - 15
-                    for i in all_sprites:
-                        i.rect.x -= v
+                # if player.rect.x >= WIDTH:
+                #     v = player.rect.x - WIDTH // 2 - 15
+                #     for i in all_sprites:
+                #         i.rect.x -= v
                 up_m = False
                 down_m = False
                 right_m = False
                 left_m = False
-                enemy = Enemy('ufo.png', 10,15)
-
-
-
+                # enemy = Enemy('ufo.png', 10, 15)
 
             if do_draw:
-                print('up_m',up_m, 'down_m', down_m, 'right_m',right_m, 'left_m',left_m)
 
                 if (event.type == pygame.KEYDOWN and event.key == pygame.K_UP):
                     player.rect.y -= tile_height
@@ -197,7 +123,6 @@ def start_screen():
                         if i.rect.y >= HEIGHT:
                             i.rect.y = i.rect.y - HEIGHT
 
-
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
                     player.rect.y += tile_height
                     ym += 1
@@ -205,7 +130,7 @@ def start_screen():
                     # print(all_sprites.sprites())
                     # if all_sprites.sprites()[-1].rect.y <= HEIGHT:
                     for i in all_sprites:
-                            i.rect.y -= tile_height
+                        i.rect.y -= tile_height
 
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
                     player.rect.x += tile_width
@@ -220,25 +145,7 @@ def start_screen():
                     # camera.dx += tile_width
 
                     for i in all_sprites:
-                         i.rect.x += tile_width
-
-                elif event.type == pygame.KEYDOWN and event.key == pygame.K_b:
-                    Plant(load_image("Sprout Lands - Sprites - Basic pack\Objects\Basic_Plants.png"),
-                                            6, 2, player.rect.x // tile_width, player.rect.y // tile_height)
-                    print(xm, ym)
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_w:
-                    flower = pygame.sprite.spritecollide(player, plant_group, False)
-                    if flower:
-                        flower[0].delay //= 2
-
-
-
-                flower = pygame.sprite.spritecollide(player, plant_group, False)
-                if flower:
-                    if flower[0].cur_frame == 5:
-                        all_sprites.remove(flower[0])
-                        plant_group.remove(flower[0])
-                        player.collected += 1
+                        i.rect.x += tile_width
 
 
         if do_draw:
@@ -255,53 +162,52 @@ def start_screen():
             all_sprites.draw(screen)
             enemy_sprites.draw(screen)
             player_group.draw(screen)
-            for sprite in plant_group:
-                sprite.time += sprite.clock.tick()
-                if sprite.cur_frame < 5 and sprite.time >= sprite.delay:
-                    sprite.cur_frame += 1
-                    sprite.time = 0
-                    sprite.update()
             font = pygame.font.Font(None, 50)
             text = font.render(f'Собрано растений: {player.collected}', True, (100, 255, 100))
-            enemy.time += enemy.clock.tick()
-            if enemy.time >= enemy.delay:
-                 enemy.move_towards_player(player)
+            # enemy.time += enemy.clock.tick()
+            # if enemy.time >= enemy.delay:
+            #     enemy.move_towards_player(player)
 
             screen.blit(text, (20, 0))
 
         pygame.display.flip()
-        clock.tick(FPS - 45)
+        clock.tick(FPS - 48)
 
 
 def load_level(filename):
     filename = "data/" + filename
     # читаем уровень, убирая символы перевода строки
     with open(filename, 'r') as mapFile:
-        level_map = [line.strip() for line in mapFile]
+        level_map = mapFile.read().split('\n\n')
+        for i in range(len(level_map)):
+            level_map[i] = level_map[i].split('\n')
 
     # и подсчитываем максимальную длину
     max_width = max(map(len, level_map))
 
     # дополняем каждую строку пустыми клетками ('.')
-    return list(map(lambda x: x.ljust(max_width, '.'), level_map))
+    return random.choices(level_map, k=4)
 
 
 tile_images = {
     'wall': load_image('box.png'),
-    'empty': load_image('grass.png')
+    'empty': load_image('grass.png'),
+    'bomb': load_image('bomb.png')
 }
-player_image = load_image('ьфтюозп.jpg', -1)
+player_image = load_image('ufo.png', -1)
 
-
-player  = None
+player = None
 
 
 class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
         super().__init__(tiles_group, all_sprites)
         self.image = tile_images[tile_type]
+        self.image = pygame.transform.scale(self.image, (tile_width, tile_height))
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
+
+
     def update(self):
         pass
 
@@ -313,34 +219,38 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(self.image, (tile_width, tile_height))
         self.collected = 0
         self.rect = self.image.get_rect().move(
-            tile_width * pos_x + 15, tile_height * pos_y + 5)
+            tile_width * pos_x, tile_height * pos_y)
         self.clock = pygame.time.Clock()
         self.time = 0
         self.time += self.clock.tick()
+
     def update(self):
         pass
 
 
-
 def generate_level(level):
     new_player, x, y = None, None, None
-    for y in range(len(level)):
-        for x in range(len(level[y])):
-            if level[y][x] == '.':
-                Tile('empty', x, y)
-            elif level[y][x] == '#':
-                Tile('wall', x, y)
-            elif level[y][x] == '@':
-                Tile('empty', x, y)
-                # AnimatedSprite(load_image("Sprout Lands - Sprites - Basic pack\Objects\Basic_Plants.png"), 6, 2, x, y)
-                new_player = Player(x, y)
-                # x0, y0 = x, y
-            elif level[y][x] == 'f':
-                Tile('empty', x, y)
-                Plant(load_image("Sprout Lands - Sprites - Basic pack\Objects\Basic_Plants.png"), 6, 2, x, y)
-    # x, y = 200, 150
-    # new_player = Player(x, y)
-    # вернем игрока, а также размер поля в клетках
+    lvl = []
+    for i in level:
+        lvl += i
+    for y in range(len(lvl)):
+        for x in range(len(lvl[y])):
+            for cell in lvl[y][x]:
+                if cell == '.':
+                    Tile('empty', x + 4, y)
+                elif cell == '#':
+                    Tile('wall', x + 4, y)
+                elif cell == 'F':
+                    Tile('empty', x + 4, y)
+                    # AnimatedSprite(load_image("Sprout Lands - Sprites - Basic pack\Objects\Basic_Plants.png"), 6, 2, x, y)
+
+                elif cell == '@':
+                    Tile('empty', x + 4, y)
+                    Tile('bomb', x + 4, y)
+
+    new_player = Player(5, 12)
+    print()
     return new_player, x, y
+
 
 start_screen()

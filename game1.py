@@ -20,6 +20,7 @@ XM, YM = 0, 0
 tile_width = tile_height = 50
 
 
+
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     # если файл не существует, то выходим
@@ -36,7 +37,7 @@ def load_image(name, colorkey=None):
         image = image.convert_alpha()
     return image
 
-
+game_fon = pygame.transform.scale(load_image('fon_1.png'), (WIDTH, HEIGHT))
 def terminate():
     pygame.quit()
     sys.exit()
@@ -105,7 +106,7 @@ def start_screen():
                 right_m = False
                 left_m = False
                 for i in range(5):
-                    Enemy('mario.png', random.randint(0, WIDTH), random.randint(0, HEIGHT))
+                    Enemy('ufo.png', random.randint(0, WIDTH), random.randint(0, HEIGHT))
 
             if do_draw:
 
@@ -134,37 +135,72 @@ def start_screen():
                     left_m = False
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    Bullet(player.rect.x, player.rect.y, event.pos[0], event.pos[1])
+                    Bullet(player.rect.centerx, player.rect.centery, event.pos[0], event.pos[1])
+
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_LSHIFT:
+                    player.speed += 10
+                if event.type == pygame.KEYUP and event.key == pygame.K_LSHIFT:
+                    player.speed -= 10
+
+
 
 
 
         if do_draw:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            rel_x, rel_y = mouse_x - player.rect.x, mouse_y - player.rect.y
+            angle = math.atan2(rel_y, rel_x)
+            angle = (180 / math.pi) * -math.atan2(rel_y, rel_x)
+            player.image = pygame.transform.rotate(player.original_image, int(angle) + 20)
+            player.rect = player.image.get_rect(center=(player.rect.center))
             if up_m:
-                player.rect.y -= 10
+                if player.rect.y - 10 >= 0:
+                    player.rect.y -= player.speed
+
             if down_m:
-                player.rect.y += 10
+                if player.rect.y + 10 + tile_height <= HEIGHT:
+                    player.rect.y += player.speed
             if right_m:
-                player.rect.x += 10
+                if player.rect.x + 10 + tile_width <= WIDTH:
+                    player.rect.x += player.speed
             if left_m:
-                player.rect.x -= 10
+                if player.rect.x - 10 >= 0:
+                    player.rect.x -= player.speed
 
 
 
-            screen.fill((200, 200, 200))
-            all_sprites.draw(screen)
+
+            screen.blit(game_fon, (0, 0))
+
+            col = pygame.sprite.spritecollide(player, enemy_sprites, False)
+            if col:
+                player.health -= 10
+                col[0].kill()
+                Enemy('ufo.png', random.randint(0, WIDTH), random.randint(0, HEIGHT))
+            if player.health <= 0:
+                player.kill()
+                terminate()
             for i in bullet_sprites:
-                i.move_towards_player()
-                if pygame.sprite.spritecollide(i, enemy_sprites, True):
+                i.move_towards()
+                enemy = pygame.sprite.spritecollide(i, enemy_sprites, False)
+                if enemy:
+                    enemy[0].health -= 20
                     i.kill()
             for i in enemy_sprites:
                 i.time += i.clock.tick()
-                if i.time >= i.delay:
+                if i.time >= i.delay * 2:
                     i.move_towards_player(player)
+                    i.time = 0
+                if i.health <= 0:
+                    i.kill()
+                    player.kills += 1
+                    Enemy('ufo.png', random.randint(0, WIDTH), random.randint(0, HEIGHT))
+            all_sprites.draw(screen)
             bullet_sprites.draw(screen)
             enemy_sprites.draw(screen)
             player_group.draw(screen)
             font = pygame.font.Font(None, 50)
-            text = font.render(f'Собрано растений: {player.collected}', True, (100, 255, 100))
+            text = font.render(f'Здоровье: {player.health} Убито:{player.kills}', True, (100, 255, 100))
 
             screen.blit(text, (20, 0))
 
@@ -177,10 +213,17 @@ def start_screen():
 
 
 
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(player_group, all_sprites)
-        self.image = load_image('ufo.png')
+        self.image = load_image('man.jpg')
+        self.health = 2000
+        self.kills = 0
+        self.speed = 10
+        self.original_image = pygame.transform.scale(load_image('man.jpg', -1), (tile_width, tile_height))
+        self.original_image = pygame.transform.scale(self.original_image, (tile_width, tile_height))
+
         self.image = pygame.transform.scale(self.image, (tile_width, tile_height))
         self.collected = 0
         self.rect = self.image.get_rect().move(
@@ -188,6 +231,8 @@ class Player(pygame.sprite.Sprite):
         self.clock = pygame.time.Clock()
         self.time = 0
         self.time += self.clock.tick()
+        self.image = pygame.transform.rotate(self.image, int(45))
+        self.rect = self.image.get_rect(center=(self.rect.center))
 
     def update(self):
         pass
@@ -195,8 +240,8 @@ class Player(pygame.sprite.Sprite):
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y, target_x, target_y):
         super().__init__(bullet_sprites)
-        self.image = load_image('bomb.png')
-        self.image = pygame.transform.scale(self.image, (tile_width, tile_height))
+        self.image = load_image('bomb.png', -1)
+        self.image = pygame.transform.scale(self.image, (tile_width / 4, tile_height / 4))
         self.collected = 0
         self.rect = self.image.get_rect().move(x, y)
         self.speed = 7
@@ -206,11 +251,11 @@ class Bullet(pygame.sprite.Sprite):
         self.time = 0
         self.time += self.clock.tick()
 
-    def move_towards_player(self):
-        # Find direction vector (dx, dy) between enemy and player.
+    def move_towards(self):
+        # print(math.sqrt(abs(self.rect.x- self.target_x) + abs(self.rect.y - self.target_y)))
         dx, dy = self.target_x - self.rect.x, self.target_y - self.rect.y
         dist = math.hypot(dx, dy)
-        if round(dist, 0) != 0:
+        if round(dist, -1) != 0:
             dx, dy = dx / dist, dy / dist  # Normalize.
         # Move along this normalized vector towards the player at current speed.
             self.rect.x += dx * self.speed
@@ -224,7 +269,8 @@ class Enemy(pygame.sprite.Sprite):
         self.clock = pygame.time.Clock()
         self.time = 0
         self.speed = 10
-        self.delay = 1000
+        self.delay = 2
+        self.health = 100
         self.time += self.clock.tick()
         self.image = load_image(image)
         self.rect = self.image.get_rect().move(

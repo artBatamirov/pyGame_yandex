@@ -366,8 +366,8 @@ def generate_level(level):
             elif level[y][x] == 'f':
                 Tile('empty', x, y)
                 Plant(load_image("Sprout Lands - Sprites - Basic pack\Objects\Basic_Plants.png"), 6, 2, x, y)
-    # x, y = 200, 150
-    # new_player = Player(x, y)
+    x, y = 200, 150
+    new_player = Player(x, y)
     # вернем игрока, а также размер поля в клетках
     return new_player, x, y
 

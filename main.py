@@ -2,7 +2,7 @@ import pygame
 import sys, os
 import math
 
-FPS = 50
+FPS = 30
 pygame.init()
 size = WIDTH, HEIGHT = 800, 800
 screen = pygame.display.set_mode(size)
@@ -186,57 +186,38 @@ def start_screen():
 
             if do_draw:
                 print('up_m',up_m, 'down_m', down_m, 'right_m',right_m, 'left_m',left_m)
-                if event.type == pygame.KEYUP and event.key == pygame.K_UP:
 
+
+                if (event.type == pygame.KEYDOWN and event.key == pygame.K_w):
+                    up_m = True
+
+
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
+                    down_m = True
+
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_d:
+                    right_m = True
+
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_a:
+                    left_m = True
+
+                if (event.type == pygame.KEYUP and event.key == pygame.K_w):
                     up_m = False
-                    print(up_m)
+                if event.type == pygame.KEYUP and event.key == pygame.K_s:
+                    down_m = False
 
-                if (event.type == pygame.KEYDOWN and event.key == pygame.K_UP):
-                    man.update(0, 10 * tic // 1000)
-                    if ym -1 >= 0 and level[ym - 1][xm] != '#':
-                        player.rect.y -= tile_height
-                        ym -= 1
-                        up_m = True
+                if event.type == pygame.KEYUP and event.key == pygame.K_d:
+                    right_m = False
 
-                        # camera.dy += tile_height
-                        # print(all_sprites.sprites())
-                        # if all_sprites.sprites()[0].rect.y < 0:
-                        for i in all_sprites:
-                            i.rect.y += tile_height
+                if event.type == pygame.KEYUP and event.key == pygame.K_a:
+                    left_m = False
 
 
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-                    man.update(0, -10 * tic // 1000)
-                    if ym + 1 <= level_y and level[ym + 1][xm] != '#':
-                        player.rect.y += tile_height
-                        ym += 1
-                        # camera.dy -= tile_height
-                        # print(all_sprites.sprites())
-                        # if all_sprites.sprites()[-1].rect.y <= HEIGHT:
-                        for i in all_sprites:
-                                i.rect.y -= tile_height
-
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
-                    if xm + 1 <= level_x and level[ym][xm + 1] != '#':
-                        player.rect.x += tile_width
-                        xm += 1
-                        # camera.dx -= tile_width
-                        for i in all_sprites:
-                            i.rect.x -= tile_width
-
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
-                    if xm - 1 >= 0 and level[ym][xm - 1] != '#':
-                        player.rect.x -= tile_width
-                        xm -= 1
-                        # camera.dx += tile_width
-
-                        for i in all_sprites:
-                             i.rect.x += tile_width
 
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_b:
                     Plant(load_image("Sprout Lands - Sprites - Basic pack\Objects\Basic_Plants.png"),
                                             6, 2, player.rect.x // tile_width, player.rect.y // tile_height)
-                    print(xm, ym)
+
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_w:
                     flower = pygame.sprite.spritecollide(player, plant_group, False)
                     if flower:
@@ -253,33 +234,37 @@ def start_screen():
 
 
         if do_draw:
-            if not pygame.event.get():
-                if up_m:
-                    if ym - 1 >= 0 and level[ym - 1][xm] != '#':
-                        player.rect.y -= tile_height
+            if up_m:
+                if level[ym - 1][xm] != '#':
+                    player.rect.y -= 10
+                    if player.rect.y % tile_height == 0:
                         ym -= 1
-                        up_m = True
-                        for i in all_sprites:
-                            i.rect.y += tile_height
-                if down_m:
-                    if ym + 1 <= level_y and level[ym + 1][xm] != '#':
-                        player.rect.y += tile_height
+                # for i in all_sprites:
+                #     i.rect.y += 10
+            if down_m:
+                if level[ym + 1][xm] != '#':
+                    player.rect.y += 10
+                    if player.rect.y % tile_height == 0:
                         ym += 1
-                        for i in all_sprites:
-                            i.rect.y -= tile_height
-
-                if right_m:
-                    if xm + 1 <= level_x and level[ym][xm + 1] != '#':
-                        player.rect.x += tile_width
+                # for i in all_sprites:
+                #     i.rect.y -= 10
+            if right_m:
+                if level[ym][xm + 1] != '#':
+                    player.rect.x += 10
+                    if player.rect.x % tile_width == 0:
                         xm += 1
-                        for i in all_sprites:
-                            i.rect.x -= tile_width
-                if left_m:
-                    if xm - 1 >= 0 and level[ym][xm - 1] != '#':
-                        player.rect.x -= tile_width
+                # for i in all_sprites:
+                #     i.rect.x -= 10
+            if left_m:
+                if level[ym][xm - 1] != '#':
+                    player.rect.x -= 10
+                    if player.rect.x % tile_width == 0:
                         xm -= 1
-                        for i in all_sprites:
-                            i.rect.x += tile_width
+                # for i in all_sprites:
+                #     i.rect.x += 10
+            print(player.rect.x // tile_width, player.rect.y // tile_height, level[ym][xm], xm, ym)
+
+
 
             screen.fill((200, 200, 200))
             all_sprites.draw(screen)
@@ -341,7 +326,7 @@ class Player(pygame.sprite.Sprite):
         self.image = player_image
         self.collected = 0
         self.rect = self.image.get_rect().move(
-            tile_width * pos_x + 15, tile_height * pos_y + 5)
+            tile_width * pos_x , tile_height * pos_y)
         self.clock = pygame.time.Clock()
         self.time = 0
         self.time += self.clock.tick()
@@ -366,8 +351,8 @@ def generate_level(level):
             elif level[y][x] == 'f':
                 Tile('empty', x, y)
                 Plant(load_image("Sprout Lands - Sprites - Basic pack\Objects\Basic_Plants.png"), 6, 2, x, y)
-    x, y = 200, 150
-    new_player = Player(x, y)
+    # x, y = 200, 150
+    # new_player = Player(x, y)
     # вернем игрока, а также размер поля в клетках
     return new_player, x, y
 

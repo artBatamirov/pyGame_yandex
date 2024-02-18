@@ -15,6 +15,7 @@ clock = pygame.time.Clock()
 wave_clock = pygame.time.Clock()
 wave_time = wave_clock.tick()
 all_sprites = pygame.sprite.Group()
+need_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 bullet_sprites = pygame.sprite.Group()
@@ -43,7 +44,7 @@ def load_image(name, colorkey=None):
         image = image.convert_alpha()
     return image
 
-game_fon = pygame.transform.scale(load_image('fon_1.png'), (WIDTH, HEIGHT))
+game_fon = pygame.transform.scale(load_image('fog.jpg'), (WIDTH, HEIGHT))
 def terminate():
     font = pygame.font.Font(None, 50)
     text = font.render('Game Over', True, (100, 255, 100))
@@ -111,12 +112,12 @@ def start_screen():
 
 
         if do_draw:
-            mouse_x, mouse_y = pygame.mouse.get_pos()
-            rel_x, rel_y = mouse_x - player.rect.x, mouse_y - player.rect.y
-            angle = math.atan2(rel_y, rel_x)
-            angle = (180 / math.pi) * -math.atan2(rel_y, rel_x)
-            player.image = pygame.transform.rotate(player.original_image, int(angle) + 20)
-            player.rect = player.image.get_rect(center=(player.rect.center))
+            # mouse_x, mouse_y = pygame.mouse.get_pos()
+            # rel_x, rel_y = mouse_x - player.rect.x, mouse_y - player.rect.y
+            # angle = math.atan2(rel_y, rel_x)
+            # angle = (180 / math.pi) * -math.atan2(rel_y, rel_x)
+            # player.image = pygame.transform.rotate(player.original_image, int(angle) + 20)
+            # player.rect = player.image.get_rect(center=(player.rect.center))
             if key_pressed_is[pygame.K_w]:
                 if player.rect.y >= 0:
                     player.rect.y -= player.speed
@@ -143,21 +144,29 @@ def start_screen():
 
 
             screen.blit(game_fon, (0, 0))
-
+            if player.rect.x >= 780:
+                for spr in all_sprites:
+                    spr.rect.x -= 100
+            if player.rect.x <= 20:
+                for spr in all_sprites:
+                    spr.rect.x += 100
             col = pygame.sprite.spritecollide(player, enemy_sprites, False)
             if col:
                 player.health -= 5
                 col[0].kill()
-                x, y = random.randint(0, WIDTH), random.randint(0, HEIGHT)
+                x, y = random.randint(0, WIDTH // 50), random.randint(0, HEIGHT // 50)
                 while math.sqrt(abs(x - player.rect.x) ** 2 + abs(y - player.rect.y) ** 2) < 100:
-                    x, y = random.randint(0, WIDTH), random.randint(0, HEIGHT)
-                Enemy('ufo.png', x, y)
+                    x, y = random.randint(0, WIDTH // tile_width), random.randint(0, HEIGHT // tile_height)
+                Enemy('ufo.png', x * tile_width, y * tile_height)
             if player.health <= 0:
                 player.kill()
                 terminate()
             for i in bullet_sprites:
                 i.move_towards()
                 enemy = pygame.sprite.spritecollide(i, enemy_sprites, False)
+                tile = pygame.sprite.spritecollide(i, tiles_group, False)
+                if tile:
+                    i.kill()
                 if enemy:
                     enemy[0].health -= 50
                     i.kill()
@@ -173,15 +182,19 @@ def start_screen():
                     if not enemy_sprites.sprites():
                         wave_time = 0
                     for el in range(i.cost):
-                        for i in range(random.randint(1, 3)):
-                            Coin(random.randint(x_e - 10, x_e + 10), random.randint(y_e - 10, y_e + 10))
+                        Coin(random.randint(x_e - 10, x_e + 10), random.randint(y_e - 10, y_e + 10))
                     player.kills += 1
                     # Enemy('ufo.png', random.randint(0, WIDTH), random.randint(0, HEIGHT))
             coin = pygame.sprite.spritecollide(player, coin_sprites, False)
             if coin:
                 coin[0].kill()
                 player.coins += 1
+            # need_group.empty()
+            # for spr in all_sprites:
+            #     if math.sqrt(abs(spr.rect.x - player.rect.x) ** 2 + abs(spr.rect.y - player.rect.y) ** 2) <= 300:
+            #         need_group.add(spr)
             all_sprites.draw(screen)
+            # need_group.draw(screen)
             bullet_sprites.draw(screen)
             enemy_sprites.draw(screen)
             player_group.draw(screen)
@@ -190,10 +203,10 @@ def start_screen():
             if wave_time // 1000 >= 5 and not enemy_sprites.sprites():
                 wave_time = 0
                 for i in range(5):
-                    x, y = random.randint(0, WIDTH), random.randint(0, HEIGHT)
+                    x, y = random.randint(0, WIDTH // 50), random.randint(0, HEIGHT // 50)
                     while math.sqrt(abs(x - player.rect.x) ** 2 + abs(y - player.rect.y) ** 2) < 100:
-                        x, y = random.randint(0, WIDTH), random.randint(0, HEIGHT)
-                    Enemy('ufo.png', x, y)
+                        x, y = random.randint(0, WIDTH // 50), random.randint(0, HEIGHT // 50)
+                    Enemy('ufo.png', x * 50, y * 50)
             text = font.render(f'Здоровье: {player.health} Убито:{player.kills} Монеты:{player.coins} {wave_time // 1000}', True, (100, 255, 100))
             pygame_widgets.update(pygame.event.get())
             screen.blit(text, (20, 0))
@@ -209,13 +222,15 @@ def generate_level(level):
         for x in range(len(level[y])):
             if level[y][x] == '#':
                 Tile('wall', x, y)
+            if level[y][x] == 'c':
+                Coin(x * 50, y * 50, 25)
 
 
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(player_group, all_sprites)
-        self.image = load_image('man.jpg')
+        self.image = load_image('man.jpg', -1)
         self.health = 200
         self.kills = 0
         self.speed = 10
@@ -230,8 +245,8 @@ class Player(pygame.sprite.Sprite):
         self.clock = pygame.time.Clock()
         self.time = 0
         self.time += self.clock.tick()
-        self.image = pygame.transform.rotate(self.image, int(45))
-        self.rect = self.image.get_rect(center=(self.rect.center))
+        # self.image = pygame.transform.rotate(self.image, int(45))
+        # self.rect = self.image.get_rect(center=(self.rect.center))
 
     def update(self):
         pass
@@ -279,21 +294,22 @@ class Bullet(pygame.sprite.Sprite):
             self.kill()
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, image, x, y):
-        super().__init__(enemy_sprites)
+        super().__init__(enemy_sprites, all_sprites)
         self.clock = pygame.time.Clock()
         self.time = 0
 
         self.speed = random.randint(5, 10)
         self.delay = 2
         self.health = 100
-        self.cost = 2
+        self.cost = random.randint(1, 2)
         self.time += self.clock.tick()
         self.image = load_image(image)
+        self.image = pygame.transform.scale(self.image, (tile_width - 15, tile_height - 15))
         self.rect = self.image.get_rect().move(
             x, y)
 
     def move_towards_player(self, player):
-        # Find direction vector (dx, dy) between enemy and player.
+        # # Find direction vector (dx, dy) between enemy and player.
         dx, dy = player.rect.x - self.rect.x, player.rect.y - self.rect.y
         dist = math.hypot(dx, dy)
         if dist != 0:
@@ -301,7 +317,18 @@ class Enemy(pygame.sprite.Sprite):
             # Move along this normalized vector towards the player at current speed.
             self.rect.x += dx * self.speed
             self.rect.y += dy * self.speed
-
+            if pygame.sprite.spritecollide(self, tiles_group, False):
+                self.rect.x -= dx * self.speed
+                self.rect.y -= dy * self.speed
+        # if self.rect.x < player.rect.x:
+        #     self.rect.x += 10
+        # elif self.rect.x == player.rect.x:
+        #     if self.rect.y < player.rect.y:
+        #         self.rect.y += 10
+        #     elif self.rect.y > player.rect.y:
+        #         self.rect.y -= 10
+        # else:
+        #     self.rect.x -= 10
 
     def update(self, frame_n=-1):
         if frame_n == -1:
@@ -311,10 +338,10 @@ class Enemy(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(self.image, (tile_width, tile_height))
 
 class Coin(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, size=tile_width / 3):
         super().__init__(all_sprites, coin_sprites)
         self.image = load_image('coin.jpg', -1)
-        self.image = pygame.transform.scale(load_image('coin.jpg', -1), (tile_width / 3, tile_height / 3))
+        self.image = pygame.transform.scale(load_image('coin.jpg', -1), (size, size))
         self.rect = self.image.get_rect().move(x, y)
 
 class Tile(pygame.sprite.Sprite):

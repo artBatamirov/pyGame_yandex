@@ -27,6 +27,17 @@ XM, YM = 0, 0
 tile_width = tile_height = 50
 
 
+class Camera():
+    def __init__(self):
+        self.on = True
+    def move(self, x, y):
+        if self.on:
+            for i in all_sprites:
+                i.rect.x -= x
+                i.rect.y -= y
+
+
+cam = Camera()
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -62,37 +73,46 @@ def terminate():
 
 def start_screen():
     global wave_time
+    global do_draw
     # xm, ym = 0, 0
-    intro_text = ["ЗАСТАВКА", "",
-                  "Правила игры"]
-
-    fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
-    screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 30)
-    text_coord = 50
-    for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('black'))
-        intro_rect = string_rendered.get_rect()
-        text_coord += 10
-        intro_rect.top = text_coord
-        intro_rect.x = 10
-        text_coord += intro_rect.height
-        screen.blit(string_rendered, intro_rect)
+    tab = 0
     do_draw = False
     button = Button(screen, 750, 10, 30, 30, text='Stop', fontSize=10, margin=20, inactiveColour=(200, 50, 0),
                     hoverColour=(150, 0, 0), pressedColour=(0, 200, 20), radius=20, onClick=stop)
     while True:
+        if not do_draw:
+            intro_text = ["Новая игра", "Продолжить игру", "Правила игры"]
+
+            fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
+            screen.blit(fon, (0, 0))
+            font = pygame.font.Font(None, 30)
+            text_coord = 50
+            for i in range(len(intro_text)):
+                string_rendered = font.render(intro_text[i], 1, pygame.Color('black'))
+                intro_rect = string_rendered.get_rect()
+                text_coord += 10
+                intro_rect.top = text_coord
+                intro_rect.x = 10
+                text_coord += intro_rect.height
+                if i == tab:
+                    pygame.draw.rect(screen, (144, 238, 144),
+                                (intro_rect.x - 5, intro_rect.y - 5, intro_rect.width  +10, intro_rect.height + 10))
+                screen.blit(string_rendered, intro_rect)
+
         for event in pygame.event.get():
             tic = clock.tick()
             if event.type == pygame.QUIT:
                 terminate()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_TAB:
+                tab += 1
+                tab %= 3
             elif (event.type == pygame.KEYDOWN or \
                   event.type == pygame.MOUSEBUTTONDOWN) and not do_draw:
                 do_draw = True
-                player = Player(100, 100)
-                xm = player.rect.x // tile_width
-                ym = player.rect.y // tile_height
-                generate_level(load_level('map.txt'))
+
+                # xm = player.rect.x // tile_width
+                # ym = player.rect.y // tile_height
+                player = generate_level(load_level('maps\loc2.txt'))
 
             if do_draw:
 
@@ -123,21 +143,29 @@ def start_screen():
                     player.rect.y -= player.speed
                     if pygame.sprite.spritecollide(player, tiles_group, False):
                         player.rect.y += player.speed
+                    else:
+                        cam.move(0, -player.speed)
             if key_pressed_is[pygame.K_s]:
                 if player.rect.y  + player.speed <= HEIGHT:
                     player.rect.y += player.speed
                     if pygame.sprite.spritecollide(player, tiles_group, False):
                         player.rect.y -= player.speed
+                    else:
+                        cam.move(0, player.speed)
             if key_pressed_is[pygame.K_d]:
                 if player.rect.x + player.speed <= WIDTH:
                     player.rect.x += player.speed
                     if pygame.sprite.spritecollide(player, tiles_group, False):
                         player.rect.x -= player.speed
+                    else:
+                        cam.move(player.speed, 0)
             if key_pressed_is[pygame.K_a]:
                 if player.rect.x >= 0:
                     player.rect.x -= player.speed
                     if pygame.sprite.spritecollide(player, tiles_group, False):
                         player.rect.x += player.speed
+                    else:
+                        cam.move(-player.speed, 0)
 
 
 
@@ -215,7 +243,9 @@ def start_screen():
         clock.tick(FPS - 35)
 
 def stop():
-    do_draw=False
+    global do_draw
+    do_draw = False
+    print('stop')
 
 def generate_level(level):
     for y in range(len(level)):
@@ -224,6 +254,16 @@ def generate_level(level):
                 Tile('wall', x, y)
             if level[y][x] == 'c':
                 Coin(x * 50, y * 50, 25)
+            if level[y][x] == '@':
+                player = Player(x * 50, y * 50)
+    x, y = 12, 4
+    for i in range(8):
+        Tile('wall', x, y)
+        Tile('wall', x, y + 3)
+        x += 1
+
+    return player
+
 
 
 

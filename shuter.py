@@ -21,7 +21,8 @@ tiles_group = pygame.sprite.Group()
 bullet_sprites = pygame.sprite.Group()
 enemy_sprites = pygame.sprite.Group()
 coin_sprites = pygame.sprite.Group()
-player = None
+top_x, top_y = 10, 10
+player0 = None
 do_draw = False
 XM, YM = 0, 0
 tile_width = tile_height = 50
@@ -30,6 +31,7 @@ tile_width = tile_height = 50
 class Camera():
     def __init__(self):
         self.on = True
+
     def move(self, x, y):
         if self.on:
             for i in all_sprites:
@@ -38,6 +40,7 @@ class Camera():
 
 
 cam = Camera()
+
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -55,7 +58,10 @@ def load_image(name, colorkey=None):
         image = image.convert_alpha()
     return image
 
-game_fon = pygame.transform.scale(load_image('fog.jpg'), (WIDTH, HEIGHT))
+
+game_fon = pygame.transform.scale(load_image('fon_1.png'), (WIDTH, HEIGHT))
+
+
 def terminate():
     font = pygame.font.Font(None, 50)
     text = font.render('Game Over', True, (100, 255, 100))
@@ -67,13 +73,10 @@ def terminate():
     sys.exit()
 
 
-
-
-
-
 def start_screen():
     global wave_time
     global do_draw
+    global player0
     # xm, ym = 0, 0
     tab = 0
     do_draw = False
@@ -96,7 +99,8 @@ def start_screen():
                 text_coord += intro_rect.height
                 if i == tab:
                     pygame.draw.rect(screen, (144, 238, 144),
-                                (intro_rect.x - 5, intro_rect.y - 5, intro_rect.width  +10, intro_rect.height + 10))
+                                     (
+                                     intro_rect.x - 5, intro_rect.y - 5, intro_rect.width + 10, intro_rect.height + 10))
                 screen.blit(string_rendered, intro_rect)
 
         for event in pygame.event.get():
@@ -113,9 +117,9 @@ def start_screen():
                 # xm = player.rect.x // tile_width
                 # ym = player.rect.y // tile_height
                 player = generate_level(load_level('maps\loc2.txt'))
+                player0 = player
 
             if do_draw:
-
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     Bullet(player.rect.centerx, player.rect.centery, event.pos[0], event.pos[1], 250)
@@ -125,11 +129,7 @@ def start_screen():
                 if event.type == pygame.KEYUP and event.key == pygame.K_LSHIFT:
                     player.speed -= 5
 
-
         key_pressed_is = pygame.key.get_pressed()
-
-
-
 
         if do_draw:
             # mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -146,7 +146,7 @@ def start_screen():
                     else:
                         cam.move(0, -player.speed)
             if key_pressed_is[pygame.K_s]:
-                if player.rect.y  + player.speed <= HEIGHT:
+                if player.rect.y + player.speed <= HEIGHT:
                     player.rect.y += player.speed
                     if pygame.sprite.spritecollide(player, tiles_group, False):
                         player.rect.y -= player.speed
@@ -166,10 +166,6 @@ def start_screen():
                         player.rect.x += player.speed
                     else:
                         cam.move(-player.speed, 0)
-
-
-
-
 
             screen.blit(game_fon, (0, 0))
             if player.rect.x >= 780:
@@ -230,41 +226,47 @@ def start_screen():
             wave_time += wave_clock.tick()
             if wave_time // 1000 >= 5 and not enemy_sprites.sprites():
                 wave_time = 0
-                for i in range(5):
+                for i in range(10):
                     x, y = random.randint(0, WIDTH // 50), random.randint(0, HEIGHT // 50)
                     while math.sqrt(abs(x - player.rect.x) ** 2 + abs(y - player.rect.y) ** 2) < 100:
                         x, y = random.randint(0, WIDTH // 50), random.randint(0, HEIGHT // 50)
                     Enemy('ufo.png', x * 50, y * 50)
-            text = font.render(f'Здоровье: {player.health} Убито:{player.kills} Монеты:{player.coins} {wave_time // 1000}', True, (100, 255, 100))
+            text = font.render(
+                f'Здоровье: {player.health} Убито:{player.kills} Монеты:{player.coins} {wave_time // 1000}', True,
+                (100, 255, 100))
             pygame_widgets.update(pygame.event.get())
             screen.blit(text, (20, 0))
 
         pygame.display.flip()
         clock.tick(FPS - 35)
 
+
 def stop():
     global do_draw
+    global player0
     do_draw = False
+    with open('data/result/result.txt', mode='a') as output:
+        output.write(f'{player0.health} {player0.kills} {player0.coins}')
+
     print('stop')
+
 
 def generate_level(level):
     for y in range(len(level)):
         for x in range(len(level[y])):
-            if level[y][x] == '#':
-                Tile('wall', x, y)
+            # if level[y][x] == '#':
+            #     Tile('wall', x, y)
             if level[y][x] == 'c':
-                Coin(x * 50, y * 50, 25)
+                Coin(top_x + x * 50, top_y + y * 50, 25)
             if level[y][x] == '@':
-                player = Player(x * 50, y * 50)
+                player = Player(top_x + x * 50, top_y + y * 50)
     x, y = 12, 4
-    for i in range(8):
-        Tile('wall', x, y)
-        Tile('wall', x, y + 3)
-        x += 1
+    # for i in range(8):
+    #     Tile('wall', x, y)
+    #     Tile('wall', x, y + 3)
+    #     x += 1
 
     return player
-
-
 
 
 class Player(pygame.sprite.Sprite):
@@ -291,6 +293,7 @@ class Player(pygame.sprite.Sprite):
     def update(self):
         pass
 
+
 def load_level(filename):
     filename = "data/" + filename
     # читаем уровень, убирая символы перевода строки
@@ -302,6 +305,8 @@ def load_level(filename):
 
     # дополняем каждую строку пустыми клетками ('.')
     return list(map(lambda x: x.ljust(max_width, '.'), level_map))
+
+
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y, target_x, target_y, distance):
         super().__init__(bullet_sprites)
@@ -332,6 +337,8 @@ class Bullet(pygame.sprite.Sprite):
             self.rect.y += dy * self.speed
         else:
             self.kill()
+
+
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, image, x, y):
         super().__init__(enemy_sprites, all_sprites)
@@ -377,6 +384,7 @@ class Enemy(pygame.sprite.Sprite):
         self.image = self.frames[frame_n]
         self.image = pygame.transform.scale(self.image, (tile_width, tile_height))
 
+
 class Coin(pygame.sprite.Sprite):
     def __init__(self, x, y, size=tile_width / 3):
         super().__init__(all_sprites, coin_sprites)
@@ -384,11 +392,13 @@ class Coin(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(load_image('coin.jpg', -1), (size, size))
         self.rect = self.image.get_rect().move(x, y)
 
+
 class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
         super().__init__(tiles_group, all_sprites)
         self.image = load_image('box.png')
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
+
 
 start_screen()

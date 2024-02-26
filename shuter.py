@@ -22,6 +22,7 @@ bullet_sprites = pygame.sprite.Group()
 enemy_sprites = pygame.sprite.Group()
 coin_sprites = pygame.sprite.Group()
 top_x, top_y = 10, 10
+do_stop = False
 player0 = None
 do_draw = False
 XM, YM = 0, 0
@@ -77,8 +78,10 @@ def start_screen():
     global wave_time
     global do_draw
     global player0
+    global do_stop
     # xm, ym = 0, 0
     tab = 0
+
     do_draw = False
     button = Button(screen, 750, 10, 30, 30, text='Stop', fontSize=10, margin=20, inactiveColour=(200, 50, 0),
                     hoverColour=(150, 0, 0), pressedColour=(0, 200, 20), radius=20, onClick=stop)
@@ -108,18 +111,23 @@ def start_screen():
             if event.type == pygame.QUIT:
                 terminate()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_TAB:
-                tab += 1
+                print(event.mod, pygame.KMOD_LSHIFT)
+                if (event.mod == 4097):
+
+                    tab -= 1
+                else:
+                    tab += 1
                 tab %= 3
-            elif (event.type == pygame.KEYDOWN or \
-                  event.type == pygame.MOUSEBUTTONDOWN) and not do_draw:
+            elif (event.type == pygame.MOUSEBUTTONDOWN) and not do_draw:
                 do_draw = True
 
                 # xm = player.rect.x // tile_width
                 # ym = player.rect.y // tile_height
                 player = generate_level(load_level('maps\loc2.txt'))
+                do_count = True
                 player0 = player
 
-            if do_draw:
+            if do_draw and not do_stop:
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     Bullet(player.rect.centerx, player.rect.centery, event.pos[0], event.pos[1], 250)
@@ -131,7 +139,7 @@ def start_screen():
 
         key_pressed_is = pygame.key.get_pressed()
 
-        if do_draw:
+        if do_draw and not do_stop:
             # mouse_x, mouse_y = pygame.mouse.get_pos()
             # rel_x, rel_y = mouse_x - player.rect.x, mouse_y - player.rect.y
             # angle = math.atan2(rel_y, rel_x)
@@ -176,12 +184,12 @@ def start_screen():
                     spr.rect.x += 100
             col = pygame.sprite.spritecollide(player, enemy_sprites, False)
             if col:
-                player.health -= 5
+                player.health -= col[0].damage
                 col[0].kill()
                 x, y = random.randint(0, WIDTH // 50), random.randint(0, HEIGHT // 50)
                 while math.sqrt(abs(x - player.rect.x) ** 2 + abs(y - player.rect.y) ** 2) < 100:
                     x, y = random.randint(0, WIDTH // tile_width), random.randint(0, HEIGHT // tile_height)
-                Enemy('ufo.png', x * tile_width, y * tile_height)
+                # Enemy('ufo.png', x * tile_width, y * tile_height)
             if player.health <= 0:
                 player.kill()
                 terminate()
@@ -194,6 +202,9 @@ def start_screen():
                 if enemy:
                     enemy[0].health -= 50
                     i.kill()
+            # if not enemy_sprites.sprites():
+            #     do_count = True
+            #     print(do_count, enemy_sprites.sprites())
             for i in enemy_sprites:
                 i.time += i.clock.tick()
                 if i.time >= i.delay * 2:
@@ -204,7 +215,8 @@ def start_screen():
                     x_e = i.rect.x
                     y_e = i.rect.y
                     if not enemy_sprites.sprites():
-                        wave_time = 0
+                        do_count = True
+                        wave_clock.tick()
                     for el in range(i.cost):
                         Coin(random.randint(x_e - 10, x_e + 10), random.randint(y_e - 10, y_e + 10))
                     player.kills += 1
@@ -215,7 +227,7 @@ def start_screen():
                 player.coins += 1
             # need_group.empty()
             # for spr in all_sprites:
-            #     if math.sqrt(abs(spr.rect.x - player.rect.x) ** 2 + abs(spr.rect.y - player.rect.y) ** 2) <= 300:
+            #     if math.sqrt(abs(spr.rect.x - player.rect.x) ** 2 + abs(spr.rect.y - player.rect.y) ** 2) <= w
             #         need_group.add(spr)
             all_sprites.draw(screen)
             # need_group.draw(screen)
@@ -223,27 +235,49 @@ def start_screen():
             enemy_sprites.draw(screen)
             player_group.draw(screen)
             font = pygame.font.Font(None, 50)
-            wave_time += wave_clock.tick()
-            if wave_time // 1000 >= 5 and not enemy_sprites.sprites():
+            if do_count:
+                wave_time += wave_clock.tick()
+            if wave_time // 1000 >= 10 and not enemy_sprites.sprites():
                 wave_time = 0
+                do_count = False
                 for i in range(10):
                     x, y = random.randint(0, WIDTH // 50), random.randint(0, HEIGHT // 50)
                     while math.sqrt(abs(x - player.rect.x) ** 2 + abs(y - player.rect.y) ** 2) < 100:
                         x, y = random.randint(0, WIDTH // 50), random.randint(0, HEIGHT // 50)
-                    Enemy('ufo.png', x * 50, y * 50)
+                    Enemy('Individual Sprites/slime-move-0.png', x * 50, y * 50)
+
             text = font.render(
                 f'Здоровье: {player.health} Убито:{player.kills} Монеты:{player.coins} {wave_time // 1000}', True,
                 (100, 255, 100))
             pygame_widgets.update(pygame.event.get())
             screen.blit(text, (20, 0))
+        if do_stop:
+            tab = 0
+            intro_text = ["Продолжить", "Меню", "Настройки"]
+            font = pygame.font.Font(None, 30)
+            text_coord = 200
+            for i in range(len(intro_text)):
+                string_rendered = font.render(intro_text[i], 1, pygame.Color('white'))
+                intro_rect = string_rendered.get_rect()
+                text_coord += 10
+                intro_rect.top = text_coord
+                intro_rect.x = 10
+                text_coord += intro_rect.height
+                if i == tab:
+                    pygame.draw.rect(screen, (144, 238, 144),
+                                     (
+                                         intro_rect.x - 5, intro_rect.y - 5, intro_rect.width + 10,
+                                         intro_rect.height + 10))
+                screen.blit(string_rendered, intro_rect)
 
         pygame.display.flip()
         clock.tick(FPS - 35)
 
 
 def stop():
-    global do_draw
+    global do_stop
     global player0
+    do_stop = not do_stop
     do_draw = False
     with open('data/result/result.txt', mode='a') as output:
         output.write(f'{player0.health} {player0.kills} {player0.coins}')
@@ -315,6 +349,7 @@ class Bullet(pygame.sprite.Sprite):
         self.collected = 0
         self.rect = self.image.get_rect().move(x, y)
         self.speed = 7
+
         self.distance = distance
         self.target_x = target_x
         self.target_y = target_y
@@ -344,11 +379,11 @@ class Enemy(pygame.sprite.Sprite):
         super().__init__(enemy_sprites, all_sprites)
         self.clock = pygame.time.Clock()
         self.time = 0
-
-        self.speed = random.randint(5, 10)
+        self.damage = random.randint(4, 8)
+        self.speed = random.randint(5, 12)
         self.delay = 2
-        self.health = 100
         self.cost = random.randint(1, 2)
+        self.health = random.randint(50, 100)
         self.time += self.clock.tick()
         self.image = load_image(image)
         self.image = pygame.transform.scale(self.image, (tile_width - 15, tile_height - 15))

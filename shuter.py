@@ -113,7 +113,9 @@ def start_screen():
 
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 do_draw = False
-                print('esc')
+                if tab == 0 or tab == 1 and all_sprites.sprites():
+                    stop(player, wave_number)
+
             if event.type == pygame.KEYDOWN and event.key == pygame.K_TAB:
                 print(event.mod, pygame.KMOD_LSHIFT)
                 if (event.mod == 4097):
@@ -131,9 +133,36 @@ def start_screen():
                     do_count = True
                     player0 = player
                     wave_clock.tick()
+                    do_stop = False
+                if tab == 1:
+                    do_stop = False
+                    with open('data/result/save.txt', mode='r') as f1:
+                        inf = f1.readlines()
+
+                        for i in inf:
+                            print(i)
+                            sprite = i.strip('\n').split()
+                            if sprite[2] == 'Player':
+                                player = Player(int(sprite[0]), int(sprite[1]))
+                                print(11111111)
+                                with open('data/result/result.txt', mode='r') as f2:
+                                    inf = f2.readline(-1).split()
+                                    player.health == int(inf[0])
+                                    player.kills == int(inf[1])
+                                    player.coins == int(inf[2])
+                                    wave_number == int(inf[3])
+                            elif sprite[2] == 'Enemy':
+                                Enemy(int(sprite[0]), int(sprite[1]), wave_number)
+                    do_count = True
+                    player0 = player
+                    wave_clock.tick()
 
 
-            if do_draw and not do_stop and tab == 0:
+
+
+
+
+            if do_draw and not do_stop and tab in (0, 1):
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     Bullet(player.rect.centerx, player.rect.centery, event.pos[0], event.pos[1], 250)
@@ -145,7 +174,7 @@ def start_screen():
 
         key_pressed_is = pygame.key.get_pressed()
 
-        if do_draw and not do_stop and tab == 0:
+        if do_draw and not do_stop and tab in (0, 1):
             # mouse_x, mouse_y = pygame.mouse.get_pos()
             # rel_x, rel_y = mouse_x - player.rect.x, mouse_y - player.rect.y
             # angle = math.atan2(rel_y, rel_x)
@@ -182,7 +211,7 @@ def start_screen():
                     #     cam.move(-player.speed, 0)
 
             # screen.blit(game_fon, (0, 0))
-            screen.fill((200, 200, 200))
+            screen.fill((240, 240, 240))
             # if player.rect.x >= 780:
             #     for spr in all_sprites:
             #         spr.rect.x -= 100
@@ -261,7 +290,7 @@ def start_screen():
             if wave_time // 1000 >= 10 and not enemy_sprites.sprites():
                 wave_time = 0
                 do_count = False
-                for i in range(1):
+                for i in range(5 + wave_number // 2):
                     x, y = random.randint(0, WIDTH // 50), random.randint(0, HEIGHT // 50)
                     while math.sqrt(abs(x - player.rect.x) ** 2 + abs(y - player.rect.y) ** 2) < 100:
                         x, y = random.randint(0, WIDTH // 50), random.randint(0, HEIGHT // 50)
@@ -272,24 +301,24 @@ def start_screen():
                 pygame.Color('black'))
             pygame_widgets.update(pygame.event.get())
             screen.blit(text, (20, 0))
-        if do_stop:
-            tab = 0
-            intro_text = ["Продолжить", "Меню", "Настройки"]
-            font = pygame.font.Font(None, 50)
-            text_coord = 200
-            for i in range(len(intro_text)):
-                string_rendered = font.render(intro_text[i], 1, pygame.Color('white'))
-                intro_rect = string_rendered.get_rect()
-                text_coord += 10
-                intro_rect.top = text_coord
-                intro_rect.x = 10
-                text_coord += intro_rect.height
-                if i == tab:
-                    pygame.draw.rect(screen, (144, 238, 144),
-                                     (
-                                         intro_rect.x - 5, intro_rect.y - 5, intro_rect.width + 10,
-                                         intro_rect.height + 10))
-                screen.blit(string_rendered, intro_rect)
+        # if do_stop:
+        #     tab = 0
+        #     intro_text = ["Продолжить", "Меню", "Настройки"]
+        #     font = pygame.font.Font(None, 50)
+        #     text_coord = 200
+        #     for i in range(len(intro_text)):
+        #         string_rendered = font.render(intro_text[i], 1, pygame.Color('white'))
+        #         intro_rect = string_rendered.get_rect()
+        #         text_coord += 10
+        #         intro_rect.top = text_coord
+        #         intro_rect.x = 10
+        #         text_coord += intro_rect.height
+        #         if i == tab:
+        #             pygame.draw.rect(screen, (144, 238, 144),
+        #                              (
+        #                                  intro_rect.x - 5, intro_rect.y - 5, intro_rect.width + 10,
+        #                                  intro_rect.height + 10))
+        #         screen.blit(string_rendered, intro_rect)
         if tab == 2 and do_draw:
             screen.fill((255, 255, 255))
             with open('data/result/result.txt', mode='r') as file:
@@ -298,14 +327,16 @@ def start_screen():
                 screen.blit(font.render('Здоровье', 1, pygame.Color('black')), (20, 50))
                 screen.blit(font.render('Убийства', 1, pygame.Color('black')), (140, 50))
                 screen.blit(font.render('Монеты', 1, pygame.Color('black')), (260, 50))
+                screen.blit(font.render('Волны', 1, pygame.Color('black')), (380, 50))
 
                 text_coord = 100
                 for i in result:
                     text = i.strip('\n').split()
-                    pygame.draw.line(screen, (0,0, 0), (20, text_coord - 2), (300, text_coord - 2))
+                    pygame.draw.line(screen, (0,0, 0), (20, text_coord - 2), (450, text_coord - 2))
                     screen.blit(font.render(text[0], 1, pygame.Color('black')), (40, text_coord))
                     screen.blit(font.render(text[1], 1, pygame.Color('black')), (160, text_coord))
                     screen.blit(font.render(text[2], 1, pygame.Color('black')), (280, text_coord))
+                    screen.blit(font.render(text[3], 1, pygame.Color('black')), (400, text_coord))
                     # string_rendered = font.render(text, 1, pygame.Color('black'))
                     # intro_rect = string_rendered.get_rect()
                     text_coord += 20
@@ -314,21 +345,22 @@ def start_screen():
                     # intro_rect.x = 10
                     # text_coord += intro_rect.height
                     # screen.blit(string_rendered, intro_rect)
-                pygame.draw.line(screen, (0, 0, 0), (20, text_coord -2), (300, text_coord -2))
+                pygame.draw.line(screen, (0, 0, 0), (20, text_coord -2), (450, text_coord -2))
 
         pygame.display.flip()
         clock.tick(FPS - 35)
 
 
-def stop():
+def stop(player, wave_number):
     global do_stop
-    global player0
-    do_stop = not do_stop
+    do_stop = True
     do_draw = False
     with open('data/result/result.txt', mode='a') as output:
-        output.write(f'\n{player0.health} {player0.kills} {player0.coins}')
-
-    print('stop')
+        output.write(f'\n{player.health} {player.kills} {player.coins} {wave_number}')
+    with open('data/result/save.txt', mode='w') as f:
+        for sprite in all_sprites:
+            f.write(f'{sprite.rect.x} {sprite.rect.y} {sprite.__class__.__name__}\n')
+            sprite.kill()
 
 
 def generate_level(level):
@@ -441,7 +473,8 @@ class Enemy(pygame.sprite.Sprite):
         self.num %= 4
         self.image = load_image(f'Individual Sprites/slime-move-{self.num}.png')
         self.image = pygame.transform.scale(self.image, (self.scale, self.scale))
-
+        if self.direct == 'r':
+            self.image = pygame.transform.flip(self.image, True, False)
 
     def change_direct(self, player):
         # print(self.direct, self.rect.x > player.rect.x)
@@ -456,6 +489,12 @@ class Enemy(pygame.sprite.Sprite):
         # # Find direction vector (dx, dy) between enemy and player.
         dx, dy = player.rect.x - self.rect.x, player.rect.y - self.rect.y
         dist = math.hypot(dx, dy)
+        print(dist)
+        if dist <= 60:
+            self.image = load_image('Individual Sprites/slime-attack-2.png')
+            self.image = pygame.transform.scale(self.image, (self.scale, self.scale))
+            if self.direct == 'r':
+                self.image = pygame.transform.flip(self.image, True, False)
         if dist != 0:
             dx, dy = dx / dist, dy / dist  # Normalize.
             # Move along this normalized vector towards the player at current speed.

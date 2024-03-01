@@ -1,1 +1,6 @@
-120 250 Player
+170 140 Player
+382 85 Enemy
+316 360 Enemy
+610 339 Enemy
+322 660 Enemy
+182 304 Enemy

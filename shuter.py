@@ -3,7 +3,6 @@ import random
 import pygame
 import sys, os
 import math
-import pygame_widgets
 from pygame_widgets.button import Button
 
 FPS = 50
@@ -66,7 +65,6 @@ def load_image(name, colorkey=None):
 def terminate():
     font = pygame.font.Font(None, 50)
     text = font.render('Game Over', True, (100, 255, 100))
-    pygame_widgets.update(pygame.event.get())
     screen.blit(text, (50, 50))
     do_draw = False
     clock.tick(30)
@@ -83,8 +81,6 @@ def start_screen():
     tab = 0
     wave_number = 0
     do_draw = False
-    button = Button(screen, 750, 10, 30, 30, text='Stop', fontSize=10, margin=20, inactiveColour=(200, 50, 0),
-                    hoverColour=(150, 0, 0), pressedColour=(0, 200, 20), radius=20, onClick=stop)
     while True:
         if not do_draw:
             intro_text = ["Новая игра", "Продолжить игру", "Результаты"]
@@ -297,9 +293,8 @@ def start_screen():
                     Enemy(x * 50, y * 50, wave_number)
 
             text = font.render(
-                f'Здоровье: {player.health}    Убито:{player.kills}     Монеты:{player.coins}    Волна: {wave_number}', True,
-                pygame.Color('black'))
-            pygame_widgets.update(pygame.event.get())
+                f'Здоровье: {player.health}    Убито:{player.kills}     Монеты:{player.coins}    Волна: {wave_number}',
+                True, pygame.Color('black'))
             screen.blit(text, (20, 0))
         # if do_stop:
         #     tab = 0
